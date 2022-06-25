@@ -1,18 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import Persons from "./components/Person";
 import Filter from "./components/Filter";
 import AddNew from "./components/AddNew";
+import personService from "./services/person";
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: "Arto Hellas", number: "040-123456", id: 1 },
-    { name: "Ada Lovelace", number: "39-44-5323523", id: 2 },
-    { name: "Dan Abramov", number: "12-43-234345", id: 3 },
-    { name: "Mary Poppendieck", number: "39-23-6423122", id: 4 },
-  ]);
+  const [persons, setPersons] = useState([]);
+  const [persons2, setPersons2] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [filter, setFilter] = useState("");
+
+  //updates/loads on initial mount
+  useEffect(() => {
+    personService.getAll().then((initialData) => setPersons(initialData));
+  }, []);
 
   const handlePersonChange = (event) => {
     setNewName(event.target.value);
@@ -26,26 +29,63 @@ const App = () => {
     setFilter(event.target.value);
   };
 
+  const deletePerson = (name, id) => {
+    if (window.confirm(`Delete ${name}?`)) {
+      personService.remove(id).then((response) => {
+        const updatedPersons = persons.filter((person) => person.id !== id);
+        setPersons(updatedPersons);
+      });
+    }
+  };
+
   const addPerson = (event) => {
     event.preventDefault();
     if (isDuplicate()) {
-      alert(newName + " is already added to phonebook");
+      if (
+        window.confirm(
+          `${newName} is already added to phonebook, replace the old number with a new one?`
+        )
+      ) {
+        const oldInfo = persons.filter((person) => person.name === newName)[0];
+        const newPerson = { ...oldInfo, number: newNumber };
+        personService
+          .update(oldInfo.id, newPerson)
+          .then((data) =>
+            setPersons(
+              persons
+                .filter((person) => person.id !== newPerson.id)
+                .concat(data)
+            )
+          );
+      }
     } else {
-      const personObject = {
-        name: newName,
-        number: newNumber,
-      };
-
-      setPersons(persons.concat(personObject));
-      setNewName("");
-      setNewNumber("");
+      if (persons.length === 0) {
+        const newPerson = {
+          name: newName,
+          number: newNumber,
+          id: 0,
+        };
+        personService
+          .create(newPerson)
+          .then((initialData) => setPersons(persons.concat(initialData)));
+      } else {
+        const newPerson = {
+          name: newName,
+          number: newNumber,
+          id: persons[persons.length - 1].id + 1,
+        };
+        personService
+          .create(newPerson)
+          .then((initialData) => setPersons(persons.concat(initialData)));
+      }
     }
+    setNewName("");
+    setNewNumber("");
   };
 
   const isDuplicate = () => {
     const names = persons.map((person) => person.name);
-    if (names.includes(newName)) return true;
-    else return false;
+    return names.includes(newName);
   };
 
   return (
@@ -60,7 +100,7 @@ const App = () => {
         addPerson={addPerson}
       />
       <h2>Numbers</h2>
-      <Persons persons={persons} filter={filter} />
+      <Persons persons={persons} filter={filter} deletePerson={deletePerson} />
     </div>
   );
 };
