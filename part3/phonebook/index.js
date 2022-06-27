@@ -1,10 +1,11 @@
 const express = require("express");
 const app = express();
+const morgan = require("morgan");
 
 let persons = [
   {
     id: 1,
-    name: "Arto Hellas",
+    name: "Jackson Camp",
     number: "040-123456",
   },
   {
@@ -25,6 +26,20 @@ let persons = [
 ];
 
 app.use(express.json());
+app.use(
+  morgan(function (tokens, req, res) {
+    return [
+      tokens.method(req, res),
+      tokens.url(req, res),
+      tokens.status(req, res),
+      tokens.res(req, res, "content-length"),
+      "-",
+      tokens["response-time"](req, res),
+      "ms",
+      JSON.stringify(req.body),
+    ].join(" ");
+  })
+);
 
 app.get("/api/persons", (request, response) => {
   response.json(persons);
@@ -52,6 +67,14 @@ app.post("/api/persons", (request, response) => {
   if (!body.number) {
     return response.status(400).json({
       error: "number is missing",
+    });
+  }
+  if (
+    persons.filter((person) => String(person.name) === String(body.name))
+      .length > 0
+  ) {
+    return response.status(400).json({
+      error: `${body.name} is already in phonebook`,
     });
   }
 
