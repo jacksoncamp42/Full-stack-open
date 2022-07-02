@@ -1,0 +1,16 @@
+{
+  "notes": [
+    {
+      "content": "hello",
+      "date": "2022-06-29T16:57:46.195Z",
+      "important": false,
+      "id": 1
+    },
+    {
+      "content": "Jackson testtesttesttest",
+      "date": "2022-06-29T16:58:12.465Z",
+      "important": true,
+      "id": 2
+    }
+  ]
+}
